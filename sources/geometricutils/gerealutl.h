@@ -21,45 +21,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-#ifndef GEOMUTILS_BASEDEFS_H
-#define GEOMUTILS_BASEDEFS_H
+#ifndef GEOMUTILS_REALUTL_H
+#define GEOMUTILS_REALUTL_H
 
-#include <cstdint>
+#include "gebasedefs.h"
+#include <limits>
+#include <cmath>
 
-#include "geplatformdefs.h"
-
-using GeInt8 = std::int8_t;
-using GeInt16 = std::int16_t;
-using GeInt32 = std::int32_t;
-
-using GeUint8 = std::uint8_t;
-using GeUint16 = std::uint16_t;
-using GeUint32 = std::uint32_t;
-
-using GeByte = GeUint8;
-using GeSize = std::size_t;
-
-using GeReal32 = float;
-using GeReal64 = double;
-
+const GeReal32 kGE_REAL32_DEFAULT_TOL = 0.000001f;
+GeReal32 GeRealAbs(GeReal32 x);
+bool GeIsRealEqualByUlps(GeReal32 a, GeReal32 b, GeInt32 tolInUlps);
 namespace ge
 {
-    using int8_t = GeInt8;
-    using int16_t = GeInt16;
-    using int32_t = GeInt32;
-
-    using uint8_t = GeUint8;
-    using uint16_t = GeUint16;
-    using uint32_t = GeUint32;
-
-    using byte_t = GeByte;
-    using size_t = GeSize;
-
-    using real32_t = GeReal32;
-    using real64_t = GeReal64;
-} // eof gu
-
-#define GE_UNUSED(x) ((void)x)
 
 
-#endif // GEOMUTILS_BASEDEFS_H
+} // eof ge
+
+#endif // GEOMUTILS_REALUTL_H

@@ -25,8 +25,31 @@ SOFTWARE.
 #define GEOMUTILS_BASEUTL_H
 
 #include "gebasedefs.h"
+
+#include "gerealutl.h"
 #include <limits>
 #include <cmath>
+
+// Endianness
+constexpr
+inline
+bool GeIsLittleEndian()
+{
+    const GeUint32 ku32Value{0x12345678};
+    const GeUint8* pu8Array = reinterpret_cast<const GeUint8*>(&ku32Value);
+    return pu8Array[0] == 0x78;
+}
+
+namespace ge
+{
+constexpr
+inline
+bool IsLittleEndian()
+{
+    return GeIsLittleEndian();
+}
+
+} // eof ge
 
 // Zero
 template <typename T>
@@ -49,50 +72,71 @@ constexpr inline double GeZero<double>()
 
 // Abs
 template <typename T>
-constexpr inline T GeAbs(T x)
+constexpr inline T GeIntAbs(T x)
 {
     return x >= 0 ? x : -x;
 }
 
-template<>
-constexpr inline float GeAbs<float>(float x) 
-{ 
-    return reinterpret_cast<float>(std::fabs(x));
-}
 
-template<>
-constexpr inline double GeAbs<double>(double x) 
-{ 
-    return std::fabs(x);
-}
 
 namespace ge
 {
     template <typename T>
-    constexpr inline T abs(T x)
+    constexpr inline T IntAbs(T x)
     {
-        return GeAbs(x);
+        return GeIntAbs(x);
+    }
+
+    template <typename T>
+    inline T RealAbs(T x)
+    {
+        return GeRealAbs(x);
     }
 } // eof gu
 
 // Real comparision
 
 template <typename T>
-constexpr inline bool GeEqual(T a, T b, T epsilon)
+bool GeRealEqual(T a, T b, T tol)
 {
-    return GeAbs(a - b) <= ( (GeAbs(a) < GeAbs(b) ? GeAbs(b) : GeAbs(a)) * epsilon);
+    T ma = GeRealAbs(a);
+    T mb = GeRealAbs(b);
+    return GeRealAbs(a - b) <= (tol * (ma < mb ? mb : ma));
+}
+
+template <>
+bool GeRealEqual<GeReal32>(GeReal32 a, GeReal32 b, GeReal32 tol)
+{
+    GeReal32 ma = GeRealAbs(a);
+    GeReal32 mb = GeRealAbs(b);
+
+    if (ma < 10.f * std::numeric_limits<float>::epsilon() ||
+        mb < 10.f * std::numeric_limits<float>::epsilon())
+    {
+        return GeIsRealEqualByUlps(a, b, 1);
+    }
+    else
+    {
+        GeReal32 minmulbytol = tol * ((ma < mb) ? ma : mb);
+        if (minmulbytol < 10 * std::numeric_limits<float>::epsilon())
+        {
+            return GeIsRealEqualByUlps(a, b, 1);
+        }
+    }
+    GeReal32 maxmulbytol = tol * ((ma < mb) ? mb : ma);
+    return GeRealAbs(a - b) <= maxmulbytol;
 }
 
 template <typename T>
-constexpr inline bool GeGreater(T a, T b, T epsilon)
+bool GeRealGreater(T a, T b, T epsilon)
 {
-    return (a - b) > ( (GeAbs(a) < GeAbs(b) ? GeAbs(b) : GeAbs(a)) * epsilon);
+    return (a - b) > ( (GeRealAbs(a) < GeRealAbs(b) ? GeRealAbs(b) : GeRealAbs(a)) * epsilon);
 }
 
 template <typename T>
-constexpr inline bool GeLess(T a, T b, T epsilon)
+bool GeRealLess(T a, T b, T epsilon)
 {
-    return (b - a) > ( (GeAbs(a) < GeAbs(b) ? GeAbs(b) : GeAbs(a)) * epsilon);
+    return (b - a) > ( (GeRealAbs(a) < GeRealAbs(b) ? GeRealAbs(b) : GeRealAbs(a)) * epsilon);
 }
 
 namespace ge
@@ -119,55 +163,59 @@ namespace ge
 // Max/Min
 
 template <typename T>
-constexpr inline T GeMax(T x1, T x2, T unused = 0)
+constexpr inline T GeIntMax(T x1, T x2)
 {
-    GE_UNUSED(unused);
     return x1 >= x2 ? x1 : x2;
 }
 
 template <typename T>
-constexpr inline T GeMin(T x1, T x2, T unused = 0)
+constexpr inline T GeIntMin(T x1, T x2)
 {
-    GE_UNUSED(unused);
     return x1 <= x2 ? x1 : x2;
 }
 
+template <typename T>
+inline T GeRealMax(T x1, T x2, T tol);
+
+template <typename T>
+inline T GeRealMin(T x1, T x2, T tol);
+
 template <>
-constexpr inline float GeMax<float>(float x1, float x2, float epsilon)
+inline float GeRealMax<float>(float x1, float x2, float epsilon)
 {
-    return GeGreater(x1, x2, epsilon) ? x1 : x2;
+    return GeRealGreater(x1, x2, epsilon) ? x1 : x2;
 }
 
 template <>
-constexpr inline double GeMax<double>(double x1, double x2, double epsilon)
+inline double GeRealMax<double>(double x1, double x2, double epsilon)
 {
-    return GeGreater(x1, x2, epsilon) ? x1 : x2;
+    return GeRealGreater(x1, x2, epsilon) ? x1 : x2;
 }
 
 template <>
-constexpr inline float GeMin<float>(float x1, float x2, float epsilon)
+inline float GeRealMin<float>(float x1, float x2, float epsilon)
 {
-    return GeLess(x1, x2, epsilon) ? x1 : x2;
+    return GeRealLess(x1, x2, epsilon) ? x1 : x2;
 }
 
 template <>
-constexpr inline double GeMin<double>(double x1, double x2, double epsilon)
+inline double GeRealMin<double>(double x1, double x2, double epsilon)
 {
-    return GeLess(x1, x2, epsilon) ? x1 : x2;
+    return GeRealLess(x1, x2, epsilon) ? x1 : x2;
 }
 
 namespace ge
 {
     template <typename T>
-    constexpr inline T maximum(T x1, T x2, T epsilon = 0)
+    inline T maximum(T x1, T x2, T epsilon = 0)
     {
-        return GeMax(x1, x2, epsilon);
+        return GeRealMax(x1, x2, epsilon);
     }
 
     template <typename T>
-    constexpr inline T minimum(T x1, T x2, T epsilon = 0)
+    inline T minimum(T x1, T x2, T epsilon = 0)
     {
-        return GeMin(x1, x2, epsilon);
+        return GeRealMin(x1, x2, epsilon);
     }
 
 

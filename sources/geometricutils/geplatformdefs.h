@@ -21,45 +21,21 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-#ifndef GEOMUTILS_BASEDEFS_H
-#define GEOMUTILS_BASEDEFS_H
-
-#include <cstdint>
-
-#include "geplatformdefs.h"
-
-using GeInt8 = std::int8_t;
-using GeInt16 = std::int16_t;
-using GeInt32 = std::int32_t;
-
-using GeUint8 = std::uint8_t;
-using GeUint16 = std::uint16_t;
-using GeUint32 = std::uint32_t;
-
-using GeByte = GeUint8;
-using GeSize = std::size_t;
-
-using GeReal32 = float;
-using GeReal64 = double;
-
-namespace ge
-{
-    using int8_t = GeInt8;
-    using int16_t = GeInt16;
-    using int32_t = GeInt32;
-
-    using uint8_t = GeUint8;
-    using uint16_t = GeUint16;
-    using uint32_t = GeUint32;
-
-    using byte_t = GeByte;
-    using size_t = GeSize;
-
-    using real32_t = GeReal32;
-    using real64_t = GeReal64;
-} // eof gu
-
-#define GE_UNUSED(x) ((void)x)
+#ifndef GEOMUTILS_PLATFORMDEFS_H
+#define GEOMUTILS_PLATFORMDEFS_H
 
 
-#endif // GEOMUTILS_BASEDEFS_H
+#ifdef __GNUC__
+#define GE_GCC_COMPILER
+#endif
+
+#ifdef GE_GCC_COMPILER
+#   if BYTE_ORDER == LITTLE_ENDIAN
+#       define GE_LITTLE_ENDIAN
+#   elif BYTE_ORDER == BIG_ENDIAN
+#       define GE_BIG_ENDIAN
+#   endif
+#endif
+
+
+#endif // GEOMUTILS_PLATFORMDEFS_H
