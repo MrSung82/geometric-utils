@@ -32,22 +32,31 @@ const GeReal32 kGE_REAL32_DEFAULT_EPSILON = 1.e-6f;
 const GeReal64 kGE_REAL64_DEFAULT_EPSILON = 1.e-15f;
 
 template <typename T>
-T GeDefaultEpsilon(T );
+class GeDefaultEpsilon;
 
 template <>
-GeReal32 GeDefaultEpsilon<GeReal32>()
+class GeDefaultEpsilon<GeReal32>
 {
-    return kGE_REAL32_DEFAULT_EPSILON;
-}
+public:
+    static GeReal32 Value()
+    {
+        return kGE_REAL32_DEFAULT_EPSILON;
+    }
+};
+
 
 template <>
-GeReal64 GeDefaultEpsilon<GeReal64>()
+class GeDefaultEpsilon<GeReal64>
 {
-    return kGE_REAL64_DEFAULT_EPSILON;
-}
+public:
+    static GeReal64 Value()
+    {
+        return kGE_REAL64_DEFAULT_EPSILON;
+    }
+};
 
 //==============================================================================
-// Real absolute
+// Real absolute and sign
 
 template <typename T>
 inline T GeRealAbs(T x);
@@ -57,6 +66,15 @@ inline GeReal32 GeRealAbs<GeReal32>(GeReal32 x);
 
 template <>
 inline GeReal64 GeRealAbs<GeReal64>(GeReal64 x);
+
+template <typename T>
+inline bool GeIsRealNegative(T x);
+
+template <>
+inline bool GeIsRealNegative<GeReal32>(GeReal32 x);
+
+template <>
+inline bool GeIsRealNegative<GeReal64>(GeReal64 x);
 
 namespace ge
 {

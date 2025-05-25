@@ -147,7 +147,7 @@ namespace details
 
 
 //==============================================================================
-// Real absolute
+// Real absolute and sign
 
 template <>
 inline GeReal32 GeRealAbs<GeReal32>(GeReal32 x)
@@ -160,6 +160,12 @@ inline GeReal32 GeRealAbs<GeReal32>(GeReal32 x)
 #endif
 }
 
+template <>
+inline bool GeIsRealNegative<GeReal32>(GeReal32 x)
+{
+    ge::details::Real32Impl fX(x);
+    return fX.IsNegative();
+}
 //==============================================================================
 // Real comparision
 
@@ -178,6 +184,32 @@ bool GeIsRealEqualByUlps(GeReal32 a, GeReal32 b, GeInt32 tolInUlps)
     return (ulpsDiff <= tolInUlps);
 }
 
+bool GeIsRealLessByUlps(GeReal32 a, GeReal32 b, GeInt32 tolInUlps)
+{
+    if (GeIsRealEqualByUlps(a, b, tolInUlps))
+        return false;
+
+    ge::details::Real32Impl fA(a);
+    ge::details::Real32Impl fB(b);
+
+    if (fA.IsNegative())
+    {
+        if (!fB.IsNegative())
+        {
+            return (a == b) ? false : true; // -0 & 0 case
+        }
+    }
+    else // a - positive or zero
+    {
+        if (fB.IsNegative())
+        {
+            return false;
+        }
+    }
+
+    GeInt32 ulpsDiff = fB.AsInt32() - fA.AsInt32();
+    return ulpsDiff > 0;
+}
 
 namespace ge
 {
@@ -226,6 +258,16 @@ public:
         {
             m_flags |= kMinFactoredBelowThreshold;
         }
+    }
+
+    bool IsFirstAbsBelowThreshold() const
+    {
+        return m_flags & kFirstBelowThreshold;
+    }
+
+    bool IsSecondAbsBelowThreshold() const
+    {
+        return m_flags & kSecondBelowThreshold;
     }
 
     bool IsAnyOfAbsBelowTheshold() const
@@ -284,9 +326,26 @@ bool GeRealEqual<GeReal64>(GeReal64 a, GeReal64 b, GeReal64 tol);
 template <>
 bool GeRealLess<GeReal32>(GeReal32 a, GeReal32 b, GeReal32 tol)
 {
+    if (GeRealEqual(a, b, tol))
+    {
+        return false;
+    }
+
     ge::details::RealCompareAux aux(a, b, tol);
 
+    if (aux.IsFirstAbsBelowThreshold())
+    {
+        if (aux.IsSecondAbsBelowThreshold())
+        {
+            return GeIsRealLessByUlps(a, b, 1);
+        }
+        return GeIsRealNegative(b) ? false : true;
+    }
 
+    if (aux.IsSecondAbsBelowThreshold())
+    {
+        return GeIsRealNegative(a) ? true : false;
+    }
 
     return (b - a) > aux.GetMaxAbsFactored();
 }
