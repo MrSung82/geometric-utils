@@ -24,6 +24,7 @@ SOFTWARE.
 
 
 #include "gebasedefs.h"
+#include "gerealutl.h"
 #include <limits>
 #include <cmath>
 
@@ -145,7 +146,11 @@ namespace details
 } // end of ge
 
 
-GeReal32 GeRealAbs(GeReal32 x)
+//==============================================================================
+// Real absolute
+
+template <>
+inline GeReal32 GeRealAbs<GeReal32>(GeReal32 x)
 {
 #ifdef GE_FLOAT_ABS_STD_IMPL
     return reinterpret_cast<float>(std::fabs(x));
@@ -154,6 +159,9 @@ GeReal32 GeRealAbs(GeReal32 x)
     return fX.ToAbs();
 #endif
 }
+
+//==============================================================================
+// Real comparision
 
 bool GeIsRealEqualByUlps(GeReal32 a, GeReal32 b, GeInt32 tolInUlps)
 {
@@ -168,4 +176,117 @@ bool GeIsRealEqualByUlps(GeReal32 a, GeReal32 b, GeInt32 tolInUlps)
 
     GeInt32 ulpsDiff = ge::details::realmath::IntAbsImpl(fA.AsInt32() - fB.AsInt32());
     return (ulpsDiff <= tolInUlps);
+}
+
+
+namespace ge
+{
+namespace details
+{
+template <typename T>
+class RealCompareAux
+{
+    enum Flags
+    {
+        kEmpty,
+        kFirstBelowThreshold = 1 << 0,
+        kSecondBelowThreshold = 1 << 1,
+        kBelowThresholdMask = 0x00000003,
+        kMinFactoredBelowThreshold = 1 << 2,
+
+    };
+
+public:
+    RealCompareAux(T x1, T x2,
+                   T factor = GeDefaultEpsilon<T>(),
+                   T threshold = 10 * std::numeric_limits<T>::epsilon())
+        : m_x1{x1}
+        , m_x2{x2}
+        , m_factor{factor}
+        , m_threshold{threshold}
+        , m_flags{0}
+    {
+        m_absX1 = GeRealAbs(m_x1);
+        m_absX2 = GeRealAbs(m_x2);
+
+        if (m_absX1 < m_threshold)
+        {
+            m_flags |= kFirstBelowThreshold;
+        }
+
+        if (m_absX2 < m_threshold)
+        {
+            m_flags |= kSecondBelowThreshold;
+        }
+
+        m_minAbsFactored = m_factor * ((m_absX1 < m_absX2) ? m_absX1 : m_absX2);
+        m_maxAbsFactored = m_factor * ((m_absX1 < m_absX2) ? m_absX2 : m_absX1);
+
+        if (m_minAbsFactored < m_threshold)
+        {
+            m_flags |= kMinFactoredBelowThreshold;
+        }
+    }
+
+    bool IsAnyOfAbsBelowTheshold() const
+    {
+        return m_flags & kBelowThresholdMask;
+    }
+
+    bool IsMinOfAbsBelowTheshold() const
+    {
+        return m_flags & kMinFactoredBelowThreshold;
+    }
+
+    T GetMaxAbsFactored() const
+    {
+        return m_maxAbsFactored;
+    }
+
+private:
+    T m_x1{};
+    T m_x2{};
+    T m_factor{};
+    T m_threshold{}; // low values ceil
+
+    T m_absX1{};
+    T m_absX2{};
+
+    T m_minAbsFactored{};
+    T m_maxAbsFactored{};
+
+    uint32_t m_flags{};
+};
+
+} // end of details
+} // end of ge
+
+template <>
+bool GeRealEqual<GeReal32>(GeReal32 a, GeReal32 b, GeReal32 tol)
+{
+    ge::details::RealCompareAux aux(a, b, tol);
+
+    if (aux.IsAnyOfAbsBelowTheshold() ||
+        aux.IsMinOfAbsBelowTheshold())
+    {
+        return GeIsRealEqualByUlps(a, b, 1);
+    }
+
+    return GeRealAbs(a - b) <= aux.GetMaxAbsFactored();
+}
+
+/// @todo not implemented yet
+template <>
+bool GeRealEqual<GeReal64>(GeReal64 a, GeReal64 b, GeReal64 tol);
+
+
+
+template <>
+bool GeRealLess<GeReal32>(GeReal32 a, GeReal32 b, GeReal32 tol)
+{
+    ge::details::RealCompareAux aux(a, b, tol);
+
+
+
+    return (b - a) > aux.GetMaxAbsFactored();
 }

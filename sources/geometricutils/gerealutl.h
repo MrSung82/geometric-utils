@@ -28,13 +28,98 @@ SOFTWARE.
 #include <limits>
 #include <cmath>
 
-const GeReal32 kGE_REAL32_DEFAULT_TOL = 0.000001f;
-GeReal32 GeRealAbs(GeReal32 x);
-bool GeIsRealEqualByUlps(GeReal32 a, GeReal32 b, GeInt32 tolInUlps);
+const GeReal32 kGE_REAL32_DEFAULT_EPSILON = 1.e-6f;
+const GeReal64 kGE_REAL64_DEFAULT_EPSILON = 1.e-15f;
+
+template <typename T>
+T GeDefaultEpsilon(T );
+
+template <>
+GeReal32 GeDefaultEpsilon<GeReal32>()
+{
+    return kGE_REAL32_DEFAULT_EPSILON;
+}
+
+template <>
+GeReal64 GeDefaultEpsilon<GeReal64>()
+{
+    return kGE_REAL64_DEFAULT_EPSILON;
+}
+
+//==============================================================================
+// Real absolute
+
+template <typename T>
+inline T GeRealAbs(T x);
+
+template <>
+inline GeReal32 GeRealAbs<GeReal32>(GeReal32 x);
+
+template <>
+inline GeReal64 GeRealAbs<GeReal64>(GeReal64 x);
+
 namespace ge
 {
+    template <typename T>
+    inline T RealAbs(T x)
+    {
+        return GeRealAbs(x);
+    }
+} // eof gu
+
+//==============================================================================
+// Real comparision
 
 
-} // eof ge
+//------------------------------------------------------------------------------
+/**
+*/
+bool GeIsRealEqualByUlps(GeReal32 a, GeReal32 b, GeInt32 tolInUlps);
+
+//------------------------------------------------------------------------------
+/**
+    @param tol tolerance
+    @return Returns true if reals are equal
+*/
+template <typename T>
+bool GeRealEqual(T a, T b, T tol)
+{
+    T absOfA = GeRealAbs(a);
+    T absOfB = GeRealAbs(b);
+    return GeRealAbs(a - b) <= (tol * (absOfA < absOfB ? absOfB : absOfA));
+}
+
+template <>
+bool GeRealEqual<GeReal32>(GeReal32 a, GeReal32 b, GeReal32 tol);
+
+template <>
+bool GeRealEqual<GeReal64>(GeReal64 a, GeReal64 b, GeReal64 tol);
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename T>
+bool GeRealLess(T a, T b, T tol)
+{
+    return (b - a) > ( (GeRealAbs(a) < GeRealAbs(b) ? GeRealAbs(b) : GeRealAbs(a)) * tol);
+}
+
+template <>
+bool GeRealLess<GeReal32>(GeReal32 a, GeReal32 b, GeReal32 tol);
+
+template <>
+bool GeRealLess<GeReal64>(GeReal64 a, GeReal64 b, GeReal64 tol);
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename T>
+inline bool GeRealGreater(T a, T b, T tol)
+{
+    return GeRealLess(b, a, tol);
+}
+
 
 #endif // GEOMUTILS_REALUTL_H

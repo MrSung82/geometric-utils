@@ -77,8 +77,6 @@ constexpr inline T GeIntAbs(T x)
     return x >= 0 ? x : -x;
 }
 
-
-
 namespace ge
 {
     template <typename T>
@@ -87,57 +85,13 @@ namespace ge
         return GeIntAbs(x);
     }
 
-    template <typename T>
-    inline T RealAbs(T x)
-    {
-        return GeRealAbs(x);
-    }
 } // eof gu
 
 // Real comparision
 
-template <typename T>
-bool GeRealEqual(T a, T b, T tol)
-{
-    T ma = GeRealAbs(a);
-    T mb = GeRealAbs(b);
-    return GeRealAbs(a - b) <= (tol * (ma < mb ? mb : ma));
-}
 
-template <>
-bool GeRealEqual<GeReal32>(GeReal32 a, GeReal32 b, GeReal32 tol)
-{
-    GeReal32 ma = GeRealAbs(a);
-    GeReal32 mb = GeRealAbs(b);
 
-    if (ma < 10.f * std::numeric_limits<float>::epsilon() ||
-        mb < 10.f * std::numeric_limits<float>::epsilon())
-    {
-        return GeIsRealEqualByUlps(a, b, 1);
-    }
-    else
-    {
-        GeReal32 minmulbytol = tol * ((ma < mb) ? ma : mb);
-        if (minmulbytol < 10 * std::numeric_limits<float>::epsilon())
-        {
-            return GeIsRealEqualByUlps(a, b, 1);
-        }
-    }
-    GeReal32 maxmulbytol = tol * ((ma < mb) ? mb : ma);
-    return GeRealAbs(a - b) <= maxmulbytol;
-}
 
-template <typename T>
-bool GeRealGreater(T a, T b, T epsilon)
-{
-    return (a - b) > ( (GeRealAbs(a) < GeRealAbs(b) ? GeRealAbs(b) : GeRealAbs(a)) * epsilon);
-}
-
-template <typename T>
-bool GeRealLess(T a, T b, T epsilon)
-{
-    return (b - a) > ( (GeRealAbs(a) < GeRealAbs(b) ? GeRealAbs(b) : GeRealAbs(a)) * epsilon);
-}
 
 namespace ge
 {
